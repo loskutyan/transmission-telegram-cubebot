@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>transmission-telegram-cubebot</Name>
+  <Repository>ghcr.io/loskutyan/transmission-telegram-cubebot:latest</Repository>
+  <Registry>https://github.com/loskutyan/transmission-telegram-cubebot/pkgs/container/transmission-telegram-cubebot</Registry>
+  <Network>unraidnet</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/loskutyan/transmission-telegram-cubebot/issues</Support>
+  <Project>https://github.com/loskutyan/transmission-telegram-cubebot</Project>
+  <Overview>Private Telegram bot for adding and managing torrents in Transmission.</Overview>
+  <Category>Tools:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/loskutyan/transmission-telegram-cubebot/master/unraid/transmission-telegram-cubebot.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/transmission-icon.png</Icon>
+  <ExtraParams>--env-file=/mnt/user/appdata/transmission-telegram-cubebot/transmission-telegram-cubebot.env --read-only --tmpfs=/tmp:rw,noexec,nosuid,size=32m --security-opt=no-new-privileges:true --cap-drop=ALL --restart=unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled>0</DateInstalled>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Create /mnt/user/appdata/transmission-telegram-cubebot/transmission-telegram-cubebot.env and attach Transmission to the unraidnet Docker network.</Requires>
+</Container>
