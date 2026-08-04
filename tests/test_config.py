@@ -8,11 +8,13 @@ from cubebot.config import ConfigurationError, Settings
 def test_settings_loads_required_values(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
     monkeypatch.setenv("TELEGRAM_ALLOWED_USER_IDS", "10, 20,10")
+    monkeypatch.setenv("TELEGRAM_ALLOWED_GROUP_IDS", "-100123, -456,-100123")
     monkeypatch.setenv("MAX_TORRENT_FILE_BYTES", "1024")
 
     settings = Settings.from_environment()
 
     assert settings.allowed_user_ids == frozenset({10, 20})
+    assert settings.allowed_group_ids == frozenset({-100123, -456})
     assert settings.max_torrent_file_bytes == 1024
     assert settings.transmission_rpc_url == "http://transmission:9091/transmission/rpc"
 
@@ -43,6 +45,17 @@ def test_healthcheck_settings_do_not_require_telegram_values(
 
     assert settings.bot_token == ""
     assert settings.allowed_user_ids == frozenset()
+    assert settings.allowed_group_ids == frozenset()
+
+
+@pytest.mark.parametrize("value", ["group", "0", "123"])
+def test_settings_reject_invalid_group_ids(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
+    monkeypatch.setenv("TELEGRAM_ALLOWED_USER_IDS", "10")
+    monkeypatch.setenv("TELEGRAM_ALLOWED_GROUP_IDS", value)
+
+    with pytest.raises(ConfigurationError, match="TELEGRAM_ALLOWED_GROUP_IDS"):
+        Settings.from_environment()
 
 
 def test_settings_require_both_rpc_credentials(monkeypatch: pytest.MonkeyPatch) -> None:

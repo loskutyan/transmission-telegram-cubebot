@@ -11,6 +11,7 @@ needs to download a temporary Telegram file URL itself.
 ## Features in the first version
 
 - private access by numeric Telegram user ID;
+- `.torrent` intake from explicitly allowlisted groups and users;
 - magnet links and `.torrent` documents;
 - `.torrent` files stay in memory and are not written to disk;
 - `/status`, `/list`, `/pause HASH`, `/resume HASH`;
@@ -30,6 +31,7 @@ placeholder values. Do not commit that file.
 | --- | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | yes | Token issued by BotFather |
 | `TELEGRAM_ALLOWED_USER_IDS` | yes | Comma-separated numeric Telegram user IDs |
+| `TELEGRAM_ALLOWED_GROUP_IDS` | no | Group IDs allowed to submit `.torrent` files |
 | `TRANSMISSION_RPC_URL` | no | Defaults to `http://transmission:9091/transmission/rpc` |
 | `TRANSMISSION_RPC_USERNAME` | pair | RPC username, if authentication is enabled |
 | `TRANSMISSION_RPC_PASSWORD` | pair | RPC password, if authentication is enabled |
@@ -38,6 +40,20 @@ placeholder values. Do not commit that file.
 | `LOG_LEVEL` | no | Python log level; default is `INFO` |
 
 Both RPC credentials must be present together or both omitted.
+
+### Group uploads
+
+Group uploads are disabled unless `TELEGRAM_ALLOWED_GROUP_IDS` contains the
+negative numeric ID of the group or supergroup. In an allowed group, the bot
+accepts only `.torrent` documents from users listed in
+`TELEGRAM_ALLOWED_USER_IDS`. It silently ignores all other group messages and
+users, and replies only with the add result or a safe error.
+
+By default, Telegram privacy mode prevents a bot from receiving ordinary group
+documents. In BotFather, select the bot, disable Group Privacy (`/setprivacy`),
+then remove and add the bot to the group again. Administrator rights are not
+required. Telegram will deliver all group messages, but CubeBot filters them
+locally as described above.
 
 ## Local development
 
@@ -94,7 +110,8 @@ bot token.
 - Keep the bot token in the deployment platform's secret or private environment
   configuration.
 - Revoke a token immediately if it appears in a chat, log, or commit.
-- The bot operates only in private chats and only for allowlisted numeric IDs.
+- Private management is restricted to allowlisted user IDs. Group uploads also
+  require an explicitly allowlisted group ID.
 - It intentionally rejects arbitrary HTTP/HTTPS torrent URLs. This prevents the
   bot from being used as an internal-network fetcher.
 - `Удалить вместе с файлами` always requires an extra confirmation.

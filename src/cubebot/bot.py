@@ -32,7 +32,7 @@ T = TypeVar("T")
 
 
 class TelegramBot:
-    """Private bot handlers bound to one Transmission RPC client."""
+    """Private management and allowlisted group uploads for Transmission."""
 
     def __init__(self, settings: Settings, rpc: TransmissionRPC) -> None:
         self._settings = settings
@@ -53,7 +53,7 @@ class TelegramBot:
 
     async def start(self, update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show usage information to an authorised user."""
-        if not await self._authorised(update):
+        if not await self._authorised_private(update):
             return
         await self._reply_html(
             update,
@@ -64,7 +64,7 @@ class TelegramBot:
 
     async def status(self, update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         """Report Transmission availability and RPC version."""
-        if not await self._authorised(update):
+        if not await self._authorised_private(update):
             return
 
         info = await self._with_rpc_error_reply(update, self._rpc.session_info)
@@ -79,7 +79,7 @@ class TelegramBot:
 
     async def list_torrents(self, update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show the first page of torrents and their controls."""
-        if not await self._authorised(update):
+        if not await self._authorised_private(update):
             return
 
         torrents = await self._with_rpc_error_reply(update, self._rpc.list_torrents)
@@ -97,7 +97,7 @@ class TelegramBot:
 
     async def add_magnet_from_message(self, update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         """Validate and add a magnet link received as a text message."""
-        if not await self._authorised(update):
+        if not await self._authorised_private(update):
             return
         message = update.effective_message
         magnet = (message.text or "").strip() if message else ""
@@ -121,7 +121,7 @@ class TelegramBot:
         context: ContextTypes.DEFAULT_TYPE,
     ) -> None:
         """Validate and add an uploaded torrent document."""
-        if not await self._authorised(update):
+        if not await self._authorised_document(update):
             return
         message = update.effective_message
         document = message.document if message else None
@@ -160,7 +160,7 @@ class TelegramBot:
 
         added = await self._with_rpc_error_reply(update, lambda: self._rpc.add_metainfo(torrent_file))
         if added is not None:
-            await self._reply_added(update, added)
+            await self._reply_document_added(update, added)
 
     async def callback(self, update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         """Dispatch an inline torrent control or pagination action."""
@@ -168,7 +168,7 @@ class TelegramBot:
         if query is None:
             return
         await query.answer()
-        if not await self._authorised(update):
+        if not await self._authorised_private(update):
             return
 
         action, separator, argument = (query.data or "").partition(":")
@@ -268,7 +268,7 @@ class TelegramBot:
         operation: Callable[[str], Awaitable[None]],
         success_message: str,
     ) -> None:
-        if not await self._authorised(update):
+        if not await self._authorised_private(update):
             return
         if len(context.args) != 1 or not _HASH_PATTERN.fullmatch(context.args[0]):
             await self._reply_html(update, "Укажите 40-символьный hash: <code>/pause HASH</code>.")
@@ -281,17 +281,36 @@ class TelegramBot:
         else:
             await self._reply_html(update, success_message)
 
-    async def _authorised(self, update: Update) -> bool:
+    async def _authorised_private(self, update: Update) -> bool:
         user = update.effective_user
         chat = update.effective_chat
         if user is None or chat is None:
             return False
         if chat.type != "private":
-            await self._reply_html(update, "Бот работает только в личном чате.")
             return False
         if user.id not in self._settings.allowed_user_ids:
             logger.warning("Rejected unauthorised Telegram user: user_id=%s", user.id)
             await self._reply_html(update, "Доступ запрещён.")
+            return False
+        return True
+
+    async def _authorised_document(self, update: Update) -> bool:
+        user = update.effective_user
+        chat = update.effective_chat
+        if user is None or chat is None:
+            return False
+        if chat.type == "private":
+            return await self._authorised_private(update)
+        if chat.type not in {"group", "supergroup"}:
+            return False
+        if chat.id not in self._settings.allowed_group_ids:
+            return False
+        if user.id not in self._settings.allowed_user_ids:
+            logger.warning(
+                "Ignored group document from unauthorised user: user_id=%s chat_id=%s",
+                user.id,
+                chat.id,
+            )
             return False
         return True
 
@@ -306,6 +325,13 @@ class TelegramBot:
     async def _reply_added(self, update: Update, added: AddedTorrent) -> None:
         prefix = "Этот торрент уже есть" if added.duplicate else "Торрент добавлен"
         await self._reply_html(update, f"{prefix}: <b>{html.escape(added.name)}</b>")
+
+    async def _reply_document_added(self, update: Update, added: AddedTorrent) -> None:
+        if added.duplicate:
+            text = f"Файл принят, но этот торрент уже есть: <b>{html.escape(added.name)}</b>"
+        else:
+            text = f"Файл принят. Торрент добавлен: <b>{html.escape(added.name)}</b>"
+        await self._reply_html(update, text)
 
     async def _reply_html(
         self,

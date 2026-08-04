@@ -6,7 +6,7 @@ import pytest
 
 from cubebot.bot import _PAGE_SIZE, TelegramBot, _torrent_keyboard, _torrent_page
 from cubebot.config import Settings
-from cubebot.transmission_rpc import AddedTorrent, Torrent
+from cubebot.transmission_rpc import AddedTorrent, Torrent, TransmissionError
 
 
 class FakeMessage:
@@ -39,10 +39,17 @@ class FakeRPC:
         return AddedTorrent(1, "a" * 40, "example.torrent", False)
 
 
+class FailingRPC(FakeRPC):
+    async def add_metainfo(self, content: bytes) -> AddedTorrent:
+        self.metainfo = content
+        raise TransmissionError
+
+
 def _settings() -> Settings:
     return Settings(
         bot_token="123:token",  # noqa: S106 - deliberately fake test credential
         allowed_user_ids=frozenset({42}),
+        allowed_group_ids=frozenset({-100123}),
         transmission_rpc_url="http://transmission/rpc",
         transmission_rpc_username=None,
         transmission_rpc_password=None,
@@ -67,7 +74,7 @@ async def test_document_is_downloaded_and_sent_as_metainfo() -> None:
     await service.add_document(update, context)  # type: ignore[arg-type]
 
     assert rpc.metainfo == b"d4:infod4:name4:testee"
-    assert "Торрент добавлен" in message.replies[0][0]
+    assert "Файл принят. Торрент добавлен" in message.replies[0][0]
 
 
 @pytest.mark.asyncio
@@ -86,6 +93,78 @@ async def test_unauthorised_user_cannot_submit_document() -> None:
 
     assert rpc.metainfo is None
     assert message.replies[0][0] == "Доступ запрещён."
+
+
+@pytest.mark.asyncio
+async def test_authorised_user_can_submit_document_from_allowed_group() -> None:
+    rpc = FakeRPC()
+    service = TelegramBot(_settings(), rpc)  # type: ignore[arg-type]
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_user=SimpleNamespace(id=42),
+        effective_chat=SimpleNamespace(id=-100123, type="supergroup"),
+        effective_message=message,
+    )
+    context = SimpleNamespace(bot=FakeTelegramClient())
+
+    await service.add_document(update, context)  # type: ignore[arg-type]
+
+    assert rpc.metainfo == b"d4:infod4:name4:testee"
+    assert "Файл принят. Торрент добавлен" in message.replies[0][0]
+
+
+@pytest.mark.asyncio
+async def test_group_receives_safe_error_when_transmission_rejects_document() -> None:
+    rpc = FailingRPC()
+    service = TelegramBot(_settings(), rpc)  # type: ignore[arg-type]
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_user=SimpleNamespace(id=42),
+        effective_chat=SimpleNamespace(id=-100123, type="supergroup"),
+        effective_message=message,
+    )
+    context = SimpleNamespace(bot=FakeTelegramClient())
+
+    await service.add_document(update, context)  # type: ignore[arg-type]
+
+    assert rpc.metainfo is not None
+    assert message.replies[0][0] == "Transmission недоступен или отклонил запрос. Попробуйте ещё раз."
+
+
+@pytest.mark.asyncio
+async def test_group_text_is_silently_ignored() -> None:
+    rpc = FakeRPC()
+    service = TelegramBot(_settings(), rpc)  # type: ignore[arg-type]
+    message = FakeMessage()
+    message.text = "magnet:?xt=urn:btih:" + "a" * 40
+    update = SimpleNamespace(
+        effective_user=SimpleNamespace(id=42),
+        effective_chat=SimpleNamespace(id=-100123, type="supergroup"),
+        effective_message=message,
+    )
+
+    await service.add_magnet_from_message(update, SimpleNamespace())  # type: ignore[arg-type]
+
+    assert message.replies == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("user_id", "chat_id"), [(99, -100123), (42, -100999)])
+async def test_document_from_disallowed_group_or_user_is_silently_ignored(user_id: int, chat_id: int) -> None:
+    rpc = FakeRPC()
+    service = TelegramBot(_settings(), rpc)  # type: ignore[arg-type]
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_user=SimpleNamespace(id=user_id),
+        effective_chat=SimpleNamespace(id=chat_id, type="supergroup"),
+        effective_message=message,
+    )
+    context = SimpleNamespace(bot=FakeTelegramClient())
+
+    await service.add_document(update, context)  # type: ignore[arg-type]
+
+    assert rpc.metainfo is None
+    assert message.replies == []
 
 
 def test_delete_button_uses_hash_and_requires_second_confirmation() -> None:

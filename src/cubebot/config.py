@@ -52,12 +52,31 @@ def _user_ids(raw: str) -> frozenset[int]:
     return frozenset(user_ids)
 
 
+def _group_ids(raw: str) -> frozenset[int]:
+    group_ids: set[int] = set()
+    for item in raw.split(","):
+        value = item.strip()
+        if not value:
+            continue
+        try:
+            group_id = int(value)
+        except ValueError as error:
+            msg = "TELEGRAM_ALLOWED_GROUP_IDS must contain integers"
+            raise ConfigurationError(msg) from error
+        if group_id >= 0:
+            msg = "TELEGRAM_ALLOWED_GROUP_IDS must contain negative Telegram chat IDs"
+            raise ConfigurationError(msg)
+        group_ids.add(group_id)
+    return frozenset(group_ids)
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     """All configuration supplied through environment variables."""
 
     bot_token: str
     allowed_user_ids: frozenset[int]
+    allowed_group_ids: frozenset[int]
     transmission_rpc_url: str
     transmission_rpc_username: str | None
     transmission_rpc_password: str | None
@@ -70,6 +89,7 @@ class Settings:
         """Load and validate runtime settings from environment variables."""
         token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
         user_ids = os.getenv("TELEGRAM_ALLOWED_USER_IDS", "").strip()
+        group_ids = os.getenv("TELEGRAM_ALLOWED_GROUP_IDS", "").strip()
 
         if require_telegram:
             token = _required("TELEGRAM_BOT_TOKEN")
@@ -102,6 +122,7 @@ class Settings:
         return cls(
             bot_token=token,
             allowed_user_ids=_user_ids(user_ids) if user_ids else frozenset(),
+            allowed_group_ids=_group_ids(group_ids),
             transmission_rpc_url=rpc_url,
             transmission_rpc_username=rpc_username,
             transmission_rpc_password=rpc_password,
