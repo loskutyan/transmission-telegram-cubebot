@@ -1,4 +1,4 @@
-FROM python:3.13.12-slim AS builder
+FROM python:3.13.14-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.10.2 /uv /uvx /bin/
 
@@ -12,7 +12,7 @@ COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 RUN uv sync --locked --no-dev --no-editable
 
-FROM python:3.13.12-slim
+FROM python:3.13.14-slim
 
 LABEL org.opencontainers.image.source="https://github.com/loskutyan/transmission-telegram-cubebot"
 
