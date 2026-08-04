@@ -118,6 +118,19 @@ The Docker healthcheck verifies only the local Transmission RPC connection. It
 does not make calls to Telegram, so it will not consume API quota or expose the
 bot token.
 
+### Unraid
+
+The repository includes an [Unraid Docker template](unraid/transmission-telegram-cubebot.xml).
+Copy it to `/boot/config/plugins/dockerMan/templates-user/`, then select
+`transmission-telegram-cubebot` under **Docker → Add Container**. The template
+expects the private environment file at
+`/mnt/user/appdata/transmission-telegram-cubebot/transmission-telegram-cubebot.env`
+and a user-defined Docker network named `unraidnet`.
+
+The reusable template tracks `latest`. For predictable deployments, change its
+Repository field to the desired numbered release such as `0.1.0` before
+applying it.
+
 ## Security notes
 
 - Keep the bot token in the deployment platform's secret or private environment
