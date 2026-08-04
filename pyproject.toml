@@ -1,6 +1,6 @@
 [project]
 name = "transmission-telegram-cubebot"
-version = "0.1.0"
+version = "0.2.0"
 description = "Private Telegram bot for Transmission"
 readme = "README.md"
 requires-python = ">=3.13"
