@@ -1,7 +1,29 @@
 [project]
 name = "transmission-telegram-cubebot"
 version = "0.1.0"
-description = "Add your description here"
+description = "Private Telegram bot for Transmission"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "httpx==0.28.1",
+    "python-telegram-bot==22.8",
+]
+
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["cubebot*"]
+
+[dependency-groups]
+dev = [
+    "pytest==8.4.1",
+    "pytest-asyncio==1.1.0",
+    "ruff>=0.16.1",
+]

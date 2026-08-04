@@ -1,0 +1,79 @@
+force-exclude = true
+
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+]
+
+line-length = 120
+indent-width = 4
+target-version = "py313"
+
+[lint]
+select = ["ALL"]
+ignore = [
+    "COM812",  # Conflicts with the formatter.
+    "ISC001",  # Conflicts with the formatter.
+    "D104",    # Missing docstring in public package.
+    "D105",    # Missing docstring in magic method.
+    "D107",    # Missing docstring in __init__.
+    "CPY001",  # This project does not require copyright headers per file.
+    "ANN002",  # Missing type annotation for *args.
+    "ANN003",  # Missing type annotation for **kwargs.
+    "RUF001",  # Cyrillic letters in strings are intentional.
+    "RUF002",  # Cyrillic letters in docstrings are intentional.
+    "RUF003",  # Cyrillic letters in comments are intentional.
+    "PLR0913", # Too many arguments in function definition.
+]
+
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.isort]
+known-first-party = ["cubebot"]
+
+[lint.per-file-ignores]
+"tests/*" = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "S101",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "PLR2004",
+    "PLR0913",
+    "PLR0915",
+    "DTZ001",
+    "DTZ005",
+    "INP001",
+    "FBT003",
+    "ERA001",
+    "SLF001",
+    "BLE001",
+    "PT011",
+]
+
+[lint.pydocstyle]
+convention = "google"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

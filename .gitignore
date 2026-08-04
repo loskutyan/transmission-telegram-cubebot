@@ -8,6 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+.cache/
+.pytest_cache/
+
+# Local secrets
+.env
+.env.*
+!.env.example
 
 # MAC OS
 .DS_Store

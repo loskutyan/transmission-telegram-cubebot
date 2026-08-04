@@ -1,6 +1,6 @@
-def main():
-    print("Hello from transmission-telegram-cubebot!")
+"""Backward-compatible local entry point for CubeBot."""
 
+from cubebot.__main__ import main
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
