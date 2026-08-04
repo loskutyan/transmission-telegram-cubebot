@@ -14,6 +14,8 @@ RUN uv sync --locked --no-dev --no-editable
 
 FROM python:3.13.12-slim
 
+LABEL org.opencontainers.image.source="https://github.com/loskutyan/transmission-telegram-cubebot"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     VIRTUAL_ENV=/app/.venv \

@@ -72,6 +72,15 @@ uv run python -m cubebot
 
 ## Docker
 
+Published release images are available from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/loskutyan/transmission-telegram-cubebot:0.1.0
+```
+
+Use a numbered release tag for predictable deployments. The `latest` tag points
+to the newest stable release.
+
 Build locally:
 
 ```bash
