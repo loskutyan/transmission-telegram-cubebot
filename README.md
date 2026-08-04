@@ -81,6 +81,10 @@ docker pull ghcr.io/loskutyan/transmission-telegram-cubebot:0.1.0
 Use a numbered release tag for predictable deployments. The `latest` tag points
 to the newest stable release.
 
+Releases are prepared automatically from Conventional Commit messages. The
+release pull request updates the project version and `CHANGELOG.md`; merging it
+creates the GitHub release and publishes the corresponding container image.
+
 Build locally:
 
 ```bash
